@@ -1,81 +1,79 @@
-import React, {useEffect} from 'react';
-import {View, Text, Image, Alert} from 'react-native';
+import React from 'react';
+import { View, Text, Image, Alert } from 'react-native';
 import styles from './Login.style';
 import Input from '../../components/Input';
 import Button from '../../components/Button/Button';
-import {Formik} from 'formik';
+import { Formik } from 'formik';
 import usePost from '../../hooks/usePost/usePost';
+import { showMessage } from 'react-native-flash-message';
+
 import config from '../../../config';
-import axios from 'axios';
+import { ApiUrls } from '../../Constant/ApiUrls';
 
-const Login = ({navigation}) => {
-  const {data, loading, error, post} = usePost();
+const Login = ({ navigation }) => {
+  const { data, loading, error, post } = usePost();
 
-  const postReauest = async (url, apiData) => {
-    let responseData;
-
-    axios.post(url, apiData).then(res => {
-      console.log('response : ', res);
-      responseData = res;
-    });
-    console.log(responseData);
-  };
   function handleLogin(values) {
-    postReauest(config.API_AUTH_URL + '/login', values);
-
-    // axios.post(config.API_AUTH_URL + '/login', values)
-
-    // post(config.API_AUTH_URL + '/login', values);
-  }
-
-  if (error) {
-    Alert.alert('Shop', 'Bir hata oluştu!');
-  }
-  useEffect(() => {
-    if (data) {
-      console.log(data);
-    }
-  }, [data]);
-
-  if (data) {
-    if (data.status === 'Error') {
-      Alert.alert('Shop', 'User not found !');
+    if (values.username !== '' && values.password !== '') {
+      post(ApiUrls.API_AUTH_URL, values);
     } else {
-      navigation.navigate('ProductsPage');
+      showMessage({
+        message: 'Missing username or password.',
+        type: 'danger',
+      });
     }
-    console.log(data);
   }
 
+  if (!loading) {
+    console.log(data)
+    if (data) {
+      if (data.token !== undefined) {
+        const token = data.token;
+        navigation.navigate('ProductsPage');
+      } else {
+        //Alert.alert('PatikaStore', 'Something went wrong..');
+        showMessage({
+          message: 'Something went wrong..',
+          type: 'danger',
+        });
+      }
+    } else {
+      if (error) {
+        showMessage({
+          message: 'Incorrect username or password.',
+          type: 'danger',
+        });
+      }
+    }
+  }
   return (
     <View style={styles.container}>
-      <View style={styles.logo_container}>
-        <Image
-          style={styles.logo}
-          source={require('../../assets/login-logo.png')}
-        />
+      <View style={styles.ContentContainer}>
+        <View style={styles.TitleContainer}>
+          <Text style={styles.h1}>Log In Now</Text>
+          <Text style={styles.p}>Please login to reach products.</Text>
+        </View>
+        <Formik
+          initialValues={{ username: '', password: '' }}
+          onSubmit={handleLogin}>
+          {({ handleSubmit, handleChange, values }) => (
+            <View style={styles.inputContainer}>
+              <Input
+                placeholder={'Username'}
+                value={values.username}
+                onType={handleChange('username')}
+              />
+              <Input
+                placeholder={'Password'}
+                value={values.password}
+                onType={handleChange('password')}
+                isSecure={true}
+              />
+              <Button text="LOGIN" onPress={handleSubmit} loading={loading} />
+            </View>
+          )}
+        </Formik>
       </View>
-      <Formik
-        initialValues={{username: '', password: ''}}
-        onSubmit={handleLogin}>
-        {({handleSubmit, handleChange, values}) => (
-          <View style={styles.body_container}>
-            <Input
-              placeholder="Username"
-              value={values.username}
-              onType={handleChange('username')}
-              iconName={'account'}
-            />
-            <Input
-              placeholder="Password"
-              value={values.password}
-              onType={handleChange('password')}
-              iconName={'key'}
-              isSecure
-            />
-            <Button text="Login" onPress={handleSubmit} loading={loading} />
-          </View>
-        )}
-      </Formik>
     </View>
   );
 };
